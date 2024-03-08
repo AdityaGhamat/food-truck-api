@@ -163,6 +163,6 @@ app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/item", inventoryRouter);
 
 //listener
-app.listen(port, () => {
+app.listen(process.env.port || port, () => {
   console.log(`server started at localhost:${port}`);
 });
