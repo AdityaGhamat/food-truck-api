@@ -1,7 +1,7 @@
 import express from "express";
 
 //mongodb connection import
-import { connectDB } from "../utils/connection.js";
+import { connectDB } from "./utils/connection.js";
 
 //middlewares-parsers import
 import cookieParser from "cookie-parser";
@@ -9,10 +9,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 //routers import
-import userRouter from "../routes/user.js";
-import menuRouter from "../routes/menuItem.js";
-import cartRouter from "../routes/cart.js";
-import inventoryRouter from "../routes/inventoryItem.js";
+import userRouter from "./routes/user.js";
+import menuRouter from "./routes/menuItem.js";
+import cartRouter from "./routes/cart.js";
+import inventoryRouter from "./routes/inventoryItem.js";
 
 const app = express();
 const port = 8000;
