@@ -24,7 +24,7 @@ export const register = async (req, res) => {
       email,
       password: encryptedPassword,
     });
-    const token = jwt.sign({ id: user._id, email }, "secret", {
+    const token = jwt.sign({ id: user._id, email }, process.env.secret_key, {
       expiresIn: "2h",
     });
     user.token = token;
@@ -59,7 +59,7 @@ export const login = async (req, res) => {
     }
     // const encryptedPassword = await bcrypt.compare(password, user.password);
     if (user && (await bcrypt.compare(password, user.password))) {
-      const token = jwt.sign({ id: user._id, email }, "secret", {
+      const token = jwt.sign({ id: user._id, email }, process.env.secret_key, {
         expiresIn: "2h",
       });
       user.token = token;
