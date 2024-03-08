@@ -31,7 +31,7 @@ export const register = async (req, res) => {
     user.password = undefined;
     return res.status(200).json({
       success: true,
-      message: "User created Sucessfully",
+      message: "Account created Sucessfully",
     });
   } catch (error) {
     return res.status(400).json({
@@ -69,6 +69,7 @@ export const login = async (req, res) => {
         httpOnly: true,
         secure: true,
       };
+
       return res.status(200).cookie("token", token, options).json({
         success: true,
         token,
@@ -160,5 +161,22 @@ export const deleteUser = async (req, res) => {
       sucess: false,
       message: error,
     });
+  }
+};
+export const getUser = async (req, res) => {
+  try {
+    const reqId = req.id;
+
+    let user = await User.findById(reqId).select("-password");
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({ success: true, user, message: "User found" });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

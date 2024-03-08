@@ -20,7 +20,7 @@ dotenv.config();
 connectDB(); //for connection with mongodb
 
 //middlewares
-app.use(cors());
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -71,29 +71,26 @@ app.get("/", (req, res) => {
         ],
         "MenuItem API": [
           {
-            create: ["http://localhost:8000:/api/v1/user/create", "POST"],
+            create: ["http://localhost:8000:/api/v1/product/create", "POST"],
           },
           {
-            getAllItems: [
-              "http://localhost:8000:/api/v1/user/menuitems",
-              "GET",
-            ],
+            getAllItems: ["c", "GET"],
           },
           {
             getSingleItem: [
-              "http://localhost:8000:/api/v1/user/menuitems/:id",
+              "http://localhost:8000:/api/v1/product/menuitems/:id",
               "GET",
             ],
           },
           {
             updateMenuItem: [
-              "http://localhost:8000:/api/v1/user/update/:id",
+              "http://localhost:8000:/api/v1/product/update/:id",
               "PUT",
             ],
           },
           {
             deleteMenuItem: [
-              "http://localhost:8000:/api/v1/user/delete/:id",
+              "http://localhost:8000:/api/v1/product/delete/:id",
               "DELETE",
             ],
           },

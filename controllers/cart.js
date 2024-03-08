@@ -4,15 +4,17 @@ import { Cart } from "../models/cart.js";
 export const addToCart = async (req, res) => {
   const userId = req.params.id;
   const { id, name, price, rating, image, quantity } = req.body;
+
   try {
-    const existingItem = await Cart.findOne({ id, userId: userId });
+    let existingItem = await Cart.findOne({ id, userId: userId });
+
     if (existingItem) {
       let updatedItem = await Cart.findOneAndUpdate(
         { id, userId },
         {
           $set: {
             quantity: existingItem.quantity + 1,
-            totalPrice: price * (existingItem + 1),
+            totalPrice: existingItem.price * (existingItem.quantity + 1),
           },
         },
         {
@@ -22,69 +24,74 @@ export const addToCart = async (req, res) => {
       );
 
       if (!updatedItem) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to add item in cart",
-        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Failed to add to cart" });
       }
-      return res.status(200).json({
-        success: true,
-        message: "Item added to cart",
-      });
+
+      return res.status(200).json({ success: true, message: "Added to cart" });
     }
-    let newMenuItem = await Cart.create({
-      id: id,
-      itemName: name,
-      price: price,
-      ratings: rating,
-      imageUrl: image,
-      quantity: quantity,
+
+    let newCartItem = await Cart.create({
+      id,
+      name,
+      price,
+      rating,
+      image,
+      quantity,
+      userId,
       totalPrice: price * quantity,
     });
-    const savedItem = await newMenuItem.save();
-    let user = await User.findByIdAndUpdate(userId, {
-      $push: {
-        cartItems: savedItem._id,
-      },
-    });
+
+    const savedCartItem = await newCartItem.save();
+
+    let user = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        $push: {
+          cartItems: savedCartItem._id,
+        },
+      }
+    );
+
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Failed to add to cart",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Failed to add to cart" });
     }
+
     return res.status(200).json({
       success: true,
-      message: "Added to cart succesfully",
-    });
-  } catch (error) {}
-};
-export const getCart = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const cartItems = await Cart.find({ id });
-    if (!cartItems) {
-      return res.status(400).json({
-        success: false,
-        message: "No items are found",
-      });
-    }
-    return res.status(200).json({
-      success: true,
-      message: "Items are found",
-      cartItems,
+
+      message: "Added to cart",
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: error,
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
+export const getCart = async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const cartItems = await Cart.find({ userId }).populate("id");
+
+    if (!cartItems) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No items found" });
+    }
+
+    return res.status(200).json({ success: true, cartItems });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const removeFromCart = async (req, res) => {
   try {
     const id = req.params.id;
     const cartItem = await Cart.findByIdAndDelete({ _id: id });
+
     if (!cartItem) {
       return res.status(400).json({
         success: false,
@@ -93,7 +100,7 @@ export const removeFromCart = async (req, res) => {
     }
     return res.status(200).json({
       success: true,
-      message: "Item in cart removed succesfully",
+      message: "Removed from cart",
     });
   } catch (error) {
     return res.status(400).json({
@@ -110,7 +117,7 @@ export const increaseQuantity = async (req, res) => {
       [
         {
           $set: {
-            quantity: { $add: ["$quantity" + 1] },
+            quantity: { $add: ["$quantity", 1] },
             totalPrice: { $multiply: ["$price", { $add: ["$quantity", 1] }] },
           },
         },
@@ -139,6 +146,7 @@ export const increaseQuantity = async (req, res) => {
     });
   }
 };
+
 export const decreaseQuantity = async (req, res) => {
   try {
     const id = req.params.id;
