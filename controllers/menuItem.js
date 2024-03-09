@@ -153,12 +153,7 @@ export const searchMenuItems = async (req, res) => {
 
     const allMenuItems = await MenuItem.find({});
 
-    if (nodeCache.has("searchResults")) {
-      searchResults = JSON.parse(nodeCache.get("searchResults"));
-    } else {
-      searchResults = q ? search(allMenuItems) : allMenuItems;
-      nodeCache.set("searchResults", JSON.stringify(searchResults));
-    }
+    searchResults = q ? search(allMenuItems) : allMenuItems;
 
     return res.status(200).json({
       success: true,
