@@ -105,6 +105,7 @@ export const removeFromCart = async (req, res) => {
         message: "Item in the cart not found",
       });
     }
+    nodeCache.del("cartItems");
     return res.status(200).json({
       success: true,
       message: "Removed from cart",
@@ -141,7 +142,7 @@ export const increaseQuantity = async (req, res) => {
         message: "Cart item not found",
       });
     }
-
+    nodeCache.del("cartItems");
     return res.status(200).json({
       success: true,
       message: "Food quantity incremented",
@@ -179,7 +180,7 @@ export const decreaseQuantity = async (req, res) => {
         message: "Cart item not found",
       });
     }
-
+    nodeCache.del("cartItems");
     return res.status(200).json({
       success: true,
       message: "Cart item quantity decreased",
@@ -207,6 +208,7 @@ export const clearCart = async (req, res) => {
         message: "Failed to clear the cart",
       });
     }
+    nodeCache.del("cartItems");
     return res.status(200).json({
       success: true,
       message: "Order Confirmed",
