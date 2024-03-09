@@ -1,6 +1,8 @@
 import { User } from "../models/user.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import NodeCache from "node-cache";
+const nodeCache = new NodeCache();
 
 export const register = async (req, res) => {
   try {
@@ -29,6 +31,9 @@ export const register = async (req, res) => {
     });
     user.token = token;
     user.password = undefined;
+    nodeCache.del("users");
+    nodeCache.del("user");
+    nodeCache.del("accinfo");
     return res.status(200).json({
       success: true,
       message: "Account created Sucessfully",
@@ -69,7 +74,9 @@ export const login = async (req, res) => {
         httpOnly: true,
         secure: true,
       };
-
+      nodeCache.del("users");
+      nodeCache.del("user");
+      nodeCache.del("accinfo");
       return res.status(200).cookie("token", token, options).json({
         success: true,
         token,
@@ -104,8 +111,15 @@ export const logout = async (req, res) => {
 };
 
 export const allUsersList = async (req, res) => {
+  let users;
   try {
-    const users = await User.find({});
+    if (nodeCache.has("users")) {
+      users = JSON.parse(nodeCache.get("users"));
+    } else {
+      users = await User.find({});
+      nodeCache.set("users", JSON.stringify(users));
+    }
+
     return res.status(200).json({
       success: true,
       users,
@@ -119,9 +133,16 @@ export const allUsersList = async (req, res) => {
 };
 
 export const getSingleUser = async (req, res) => {
+  let user;
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select("-password");
+    if (nodeCache.has("user")) {
+      user = JSON.parse(nodeCache.get("user"));
+    } else {
+      user = await User.findById(id).select("-password");
+      nodeCache.set("user", JSON.stringify(user));
+    }
+
     if (!user) {
       return res.status(400).json({
         success: false,
@@ -151,6 +172,9 @@ export const deleteUser = async (req, res) => {
         message: "User not found",
       });
     }
+    nodeCache.del("users");
+    nodeCache.del("user");
+    nodeCache.del("accinfo");
     await user.deleteOne();
     return res.status(200).json({
       success: true,
@@ -164,10 +188,15 @@ export const deleteUser = async (req, res) => {
   }
 };
 export const getUser = async (req, res) => {
+  let user;
   try {
     const reqId = req.id;
-
-    let user = await User.findById(reqId).select("-password");
+    if (nodeCache.has("accinfo")) {
+      user = JSON.parse(nodeCache.get("accinfo"));
+    } else {
+      user = await User.findById(reqId).select("-password");
+      nodeCache.set("accinfo", JSON.stringify(user));
+    }
 
     if (!user) {
       return res

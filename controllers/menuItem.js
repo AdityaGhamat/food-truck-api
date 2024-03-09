@@ -1,4 +1,7 @@
+import { get } from "mongoose";
 import { MenuItem } from "../models/menuItem.js";
+import NodeCache from "node-cache";
+const nodeCache = new NodeCache();
 
 export const createMenuItem = async (req, res) => {
   try {
@@ -40,6 +43,8 @@ export const createMenuItem = async (req, res) => {
         message: "Failed to create menuitem",
       });
     }
+    nodeCache.del("menuItems");
+    nodeCache.del("menuItem");
     const savedMenuItem = newMenuItem.save();
     return res.status(200).json({
       success: true,
@@ -52,10 +57,14 @@ export const createMenuItem = async (req, res) => {
     });
   }
 };
-
 export const getAllItems = async (req, res) => {
+  let menuItems;
   try {
-    const menuItems = await MenuItem.find({});
+    if (nodeCache.has("menuItems")) {
+      menuItems = JSON.parse(nodeCache, get("menuItems"));
+    }
+    menuItems = await MenuItem.find({});
+    nodeCache.set("menuItems", JSON.stringify(menuItems));
     return res.status(200).json({
       success: true,
       message: "Here are all items",
@@ -68,11 +77,17 @@ export const getAllItems = async (req, res) => {
     });
   }
 };
-
 export const getSingleItem = async (req, res) => {
+  let item;
   try {
     const id = req.params.id;
-    const item = await MenuItem.findById(id);
+    if (nodeCache.has("menuItem")) {
+      item = JSON.parse(nodeCache.get("menuItem"));
+    } else {
+      item = await MenuItem.findById(id);
+      nodeCache.set("menuItem", JSON.stringify(item));
+    }
+
     if (!item) {
       return res.status(400).json({
         success: false,
@@ -91,18 +106,20 @@ export const getSingleItem = async (req, res) => {
     });
   }
 };
-
 export const updateMenuItem = async (req, res) => {
   try {
     const id = req.params.id;
     const updatedItem = req.body;
     const updatedMenuItem = await MenuItem.findByIdAndUpdate(id, updatedItem);
-    if (!updateMenuItem) {
+    if (!updatedMenuItem) {
       return res.status(400).json({
         success: false,
         message: "Cannot update menuitem",
       });
     }
+    nodeCache.del("menuItems");
+    nodeCache.del("menuItem");
+    nodeCache.del("searchResults");
     return res.status(200).json({
       success: true,
       message: "Menuitem updated successfully",
@@ -115,7 +132,46 @@ export const updateMenuItem = async (req, res) => {
     });
   }
 };
+export const searchMenuItems = async (req, res) => {
+  let searchResults;
+  try {
+    const { q } = req.query;
 
+    const keys = ["itemName", "category", "ingredients", "dietaryInfo"];
+
+    const search = (data) => {
+      return data.filter((item) =>
+        keys.some((key) => {
+          const itemValue = item[key];
+          return (
+            typeof itemValue === "string" &&
+            itemValue.toLowerCase().includes(q.toLowerCase())
+          );
+        })
+      );
+    };
+
+    const allMenuItems = await MenuItem.find({});
+
+    if (nodeCache.has("searchResults")) {
+      searchResults = JSON.parse(nodeCache.get("searchResults"));
+    } else {
+      searchResults = q ? search(allMenuItems) : allMenuItems;
+      nodeCache.set("searchResults", JSON.stringify(searchResults));
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Search results for menu items",
+      menuItems: searchResults,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 export const deleteMenuItem = async (req, res) => {
   try {
     const id = req.params.id;
@@ -126,6 +182,8 @@ export const deleteMenuItem = async (req, res) => {
         message: "Cannot delete menuitem",
       });
     }
+    nodeCache.del("menuItems");
+    nodeCache.del("menuItem");
     return res.status(200).json({
       success: true,
       message: "MenuItem deleted successfully",

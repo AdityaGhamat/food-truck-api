@@ -1,5 +1,7 @@
 import { User } from "../models/user.js";
 import { Cart } from "../models/cart.js";
+import NodeCache from "node-cache";
+const nodeCache = new NodeCache();
 
 export const addToCart = async (req, res) => {
   const userId = req.params.id;
@@ -59,7 +61,7 @@ export const addToCart = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Failed to add to cart" });
     }
-
+    nodeCache.del("cartItems");
     return res.status(200).json({
       success: true,
 
@@ -71,9 +73,14 @@ export const addToCart = async (req, res) => {
 };
 export const getCart = async (req, res) => {
   const userId = req.params.id;
-
+  let cartItems;
   try {
-    const cartItems = await Cart.find({ userId }).populate("id");
+    if (nodeCache.has("cartItems")) {
+      cartItems = JSON.parse(nodeCache.get("cartItems"));
+    } else {
+      cartItems = await Cart.find({ userId }).populate("id");
+      nodeCache.set("cartItems", JSON.stringify(cartItems));
+    }
 
     if (!cartItems) {
       return res
