@@ -58,22 +58,24 @@ export const createMenuItem = async (req, res) => {
   }
 };
 export const getAllItems = async (req, res) => {
-  let menuItems;
   try {
-    if (nodeCache.has("menuItems")) {
-      menuItems = JSON.parse(nodeCache, get("menuItems"));
+    let menuItems = nodeCache.get("menuItems");
+
+    if (!menuItems) {
+      menuItems = await MenuItem.find({});
+      nodeCache.set("menuItems", menuItems);
     }
-    menuItems = await MenuItem.find({});
-    nodeCache.set("menuItems", JSON.stringify(menuItems));
+
     return res.status(200).json({
       success: true,
       message: "Here are all items",
       menuItems,
     });
   } catch (error) {
-    return res.status(400).json({
+    console.error("Error fetching menu items:", error);
+    return res.status(500).json({
       success: false,
-      message: error,
+      message: "Internal Server Error",
     });
   }
 };
